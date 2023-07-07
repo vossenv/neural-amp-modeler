@@ -338,15 +338,19 @@ class _GUI(object):
         # Advanced-er options
         # If you're poking around looking for these, then maybe it's time to learn to
         # use the command-line scripts ;)
-        lr = 0.004
-        lr_decay = _DEFAULT_LR_DECAY
+        lr_multiplier = 0.5
+        model_type = "WaveNet"
+        # model_type = "LSTM"
+        lr = 0.004*lr_multiplier
+        lr_decay = _DEFAULT_LR_DECAY*lr_multiplier
         batch_size = _DEFAULT_BATCH_SIZE
         seed = 0
 
         # Run it
         for file in file_list:
             print("Now training {}".format(file))
-            basename = re.sub(r"\.wav$", "", file.split("/")[-1])
+            basename = re.sub(r"\.wav$", "", file.split("/")[-1]) + " - {} - {} - {}".format(model_type, lr_multiplier, architecture.value)
+            print("To: {}".format(basename))
 
             trained_model = core.train(
                 self._path_button_input.val,
@@ -362,6 +366,7 @@ class _GUI(object):
                 silent=self._checkboxes[_CheckboxKeys.SILENT_TRAINING].variable.get(),
                 save_plot=self._checkboxes[_CheckboxKeys.SAVE_PLOT].variable.get(),
                 modelname=basename,
+                model_type=model_type,
                 ignore_checks=self._checkboxes[
                     _CheckboxKeys.IGNORE_DATA_CHECKS
                 ].variable.get(),

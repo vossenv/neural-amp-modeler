@@ -38,8 +38,8 @@ torch.manual_seed(0)
 
 
 def ensure_outdir(outdir: str) -> Path:
-    outdir = Path(outdir, timestamp())
-    outdir.mkdir(parents=True, exist_ok=False)
+    outdir = Path(outdir)
+    outdir.mkdir(parents=True, exist_ok=True)
     return outdir
 
 
@@ -228,6 +228,11 @@ def main_inner(
     # Would like to, but this doesn't work for all cases.
     # If you're making snapshot models, you may find this convenient to uncomment :)
     # model.net.export(outdir)
+
+    model.net.export(
+        outdir,
+        basename=basename,
+    )
 
 
 if __name__ == "__main__":

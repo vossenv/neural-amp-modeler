@@ -691,8 +691,11 @@ def _get_configs(
                 "pre_emph_weight": 1.0,
                 "pre_emph_coef": 0.85,
             },
-            "optimizer": {"lr": 0.01},
-            "lr_scheduler": {"class": "ExponentialLR", "kwargs": {"gamma": 0.995}},
+            "optimizer": {"lr": lr},
+            "lr_scheduler": {
+                "class": "ExponentialLR",
+                "kwargs": {"gamma": 1.0 - lr_decay},
+            },
         }
     if fit_cab:
         model_config["loss"]["pre_emph_mrstft_weight"] = _CAB_MRSTFT_PRE_EMPH_WEIGHT
@@ -776,7 +779,8 @@ def _plot(
     plt.title(f"ESR={esr:.4g}")
     plt.legend()
     if filepath is not None:
-        plt.savefig(filepath + ".png")
+        epesr = f" ESR={esr:.5f}"
+        plt.savefig(filepath + epesr + ".png")
     if not silent:
         plt.show()
 
@@ -834,8 +838,8 @@ def train(
     architecture: Union[Architecture, str] = Architecture.STANDARD,
     batch_size: int = 16,
     ny: int = 8192,
-    lr=0.004,
-    lr_decay=0.007,
+    lr=0.002,
+    lr_decay=0.0035,
     seed: Optional[int] = 0,
     save_plot: bool = False,
     silent: bool = False,
