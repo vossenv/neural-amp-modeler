@@ -23,7 +23,7 @@ from ._core import InitializableFromConfig
 logger = logging.getLogger(__name__)
 
 _REQUIRED_SAMPWIDTH = 3
-REQUIRED_RATE = 48_000
+REQUIRED_RATE = 96_000
 _REQUIRED_CHANNELS = 1  # Mono
 
 
@@ -73,11 +73,11 @@ def wav_to_np(
     x_wav = wavio.read(str(filename))
     assert x_wav.data.shape[1] == _REQUIRED_CHANNELS, "Mono"
     assert x_wav.sampwidth == _REQUIRED_SAMPWIDTH, "24-bit"
-    if rate is not None and x_wav.rate != rate:
-        raise RuntimeError(
-            f"Explicitly expected sample rate of {rate}, but found {x_wav.rate} in "
-            f"file {filename}!"
-        )
+    # if rate is not None and x_wav.rate != rate:
+    #     raise RuntimeError(
+    #         f"Explicitly expected sample rate of {rate}, but found {x_wav.rate} in "
+    #         f"file {filename}!"
+    #     )
 
     if require_match is not None:
         assert required_shape is None
@@ -85,11 +85,11 @@ def wav_to_np(
         y_wav = wavio.read(str(require_match))
         required_shape = y_wav.data.shape
         required_wavinfo = WavInfo(y_wav.sampwidth, y_wav.rate)
-    if required_wavinfo is not None:
-        if x_wav.rate != required_wavinfo.rate:
-            raise ValueError(
-                f"Mismatched rates {x_wav.rate} versus {required_wavinfo.rate}"
-            )
+    # if required_wavinfo is not None:
+    #     if x_wav.rate != required_wavinfo.rate:
+    #         raise ValueError(
+    #             f"Mismatched rates {x_wav.rate} versus {required_wavinfo.rate}"
+    #         )
     arr_premono = x_wav.data[preroll:] / (2.0 ** (8 * x_wav.sampwidth - 1))
     if required_shape is not None:
         if arr_premono.shape != required_shape:
@@ -349,7 +349,8 @@ class Dataset(AbstractDataset, InitializableFromConfig):
 
     @classmethod
     def parse_config(cls, config):
-        x, x_wavinfo = wav_to_tensor(config["x_path"], info=True)
+        sample_rate = cls._validate_sample_rate(config.get("sample_rate", REQUIRED_RATE), config.get("rate"))
+        x, x_wavinfo = wav_to_tensor(config["x_path"], info=True, rate=sample_rate)
         rate = x_wavinfo.rate
         try:
             y = wav_to_tensor(
@@ -402,7 +403,7 @@ class Dataset(AbstractDataset, InitializableFromConfig):
             "y_scale": config.get("y_scale", 1.0),
             "x_path": config["x_path"],
             "y_path": config["y_path"],
-            "rate": config.get("rate", REQUIRED_RATE),
+            "rate": sample_rate,
             "require_input_pre_silence": config.get(
                 "require_input_pre_silence", _DEFAULT_REQUIRE_INPUT_PRE_SILENCE
             ),

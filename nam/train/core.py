@@ -180,6 +180,8 @@ class _DataInfo(BaseModel):
     end_blip_locations: Optional[Sequence[int]]
 
 
+SR_MULTI = 2
+
 _V1_DATA_INFO = _DataInfo(
     major_version=1,
     rate=REQUIRED_RATE,
@@ -190,20 +192,24 @@ _V1_DATA_INFO = _DataInfo(
     start_blip_locations=(12_000, 36_000),
     end_blip_locations=None,
 )
+
 _V2_DATA_INFO = _DataInfo(
     major_version=2,
     rate=REQUIRED_RATE,
-    t_blips=96_000,
-    t_validate=432_000,
-    validation_start=-960_000,  # 96_000 + 2 * 432_000
-    noise_interval=(12_000, 18_000),
-    start_blip_locations=(24_000, 72_000),
-    end_blip_locations=(-72_000, -24_000),
+    t_blips=96_000 * SR_MULTI,
+    t_validate=432_000 * SR_MULTI,
+    # validation_start=-960_000,  # 96_000 + 2 * 432_000
+    validation_start=-1*(96_000 * SR_MULTI + 2 * 432_000 * SR_MULTI),  # 96_000 + 2 * 432_000
+    noise_interval=(12_000 * SR_MULTI, 18_000 * SR_MULTI),
+    start_blip_locations=(24_000 * SR_MULTI, 72_000 * SR_MULTI),
+    end_blip_locations=(-72_000 * SR_MULTI, -24_000 * SR_MULTI),
 )
 
 _DELAY_CALIBRATION_ABS_THRESHOLD = 0.0003
 _DELAY_CALIBRATION_REL_THRESHOLD = 0.001
 _DELAY_CALIBRATION_SAFETY_FACTOR = 4
+
+
 
 
 def _warn_lookaheads(indices: Sequence[int]) -> str:
@@ -636,6 +642,7 @@ def _get_configs(
     lr_decay: float,
     batch_size: int,
     fit_cab: bool,
+    sample_rate: int,
 ):
     def get_kwargs(data_info: _DataInfo):
         if data_info.major_version == 1:
@@ -661,6 +668,7 @@ def _get_configs(
             "x_path": input_path,
             "y_path": output_path,
             "delay": delay,
+            "sample_rate": sample_rate
         },
     }
 
@@ -831,7 +839,7 @@ def train(
     input_path: str,
     output_path: str,
     train_path: str,
-    input_version: Optional[Version] = None,
+    input_version: Optional[Version] = Version(2,0,0),
     epochs=100,
     delay=None,
     model_type: str = "WaveNet",
@@ -847,6 +855,7 @@ def train(
     ignore_checks: bool = False,
     local: bool = False,
     fit_cab: bool = False,
+    sample_rate = REQUIRED_RATE,
 ) -> Optional[Model]:
     if seed is not None:
         torch.manual_seed(seed)
@@ -892,6 +901,7 @@ def train(
         lr_decay,
         batch_size,
         fit_cab,
+        sample_rate,
     )
 
     print("Starting training. It's time to kick ass and chew bubblegum!")

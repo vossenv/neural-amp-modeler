@@ -40,6 +40,7 @@ try:
     from nam import __version__
     from nam.train import core
     from nam.models.metadata import GearType, UserMetadata, ToneType
+    from nam.data import REQUIRED_RATE
 
     _install_is_valid = True
     _HAVE_ACCELERATOR = torch.cuda.is_available() or torch.backends.mps.is_available()
@@ -73,6 +74,7 @@ class _AdvancedOptions(object):
     num_epochs: int
     delay: Optional[int]
     ignore_checks: bool
+    sample_rate: int
 
 
 class _PathType(Enum):
@@ -220,6 +222,7 @@ class _GUI(object):
             _DEFAULT_NUM_EPOCHS,
             _DEFAULT_DELAY,
             _DEFAULT_IGNORE_CHECKS,
+            REQUIRED_RATE
         )
         # Window to edit them:
         self._frame_advanced_options = tk.Frame(self._root)
@@ -320,6 +323,8 @@ class _GUI(object):
         ao.mainloop()
         # ...and then re-enable it once it gets closed.
 
+
+
     def _open_metadata(self):
         """
         Open dialog for metadata
@@ -334,11 +339,12 @@ class _GUI(object):
         architecture = self.advanced_options.architecture
         delay = self.advanced_options.delay
         file_list = self._path_button_output.val
+        sample_rate = self.advanced_options.sample_rate
 
         # Advanced-er options
         # If you're poking around looking for these, then maybe it's time to learn to
         # use the command-line scripts ;)
-        lr_multiplier = 0.5
+        lr_multiplier = 1
         model_type = "WaveNet"
         # model_type = "LSTM"
         lr = 0.004*lr_multiplier
@@ -372,6 +378,7 @@ class _GUI(object):
                 ].variable.get(),
                 local=True,
                 fit_cab=self._checkboxes[_CheckboxKeys.FIT_CAB].variable.get(),
+                sample_rate=sample_rate
             )
             if trained_model is None:
                 print("Model training failed! Skip exporting...")
@@ -548,7 +555,6 @@ class _AdvancedOptionsGUI(object):
             core.Architecture,
             default=self._parent.advanced_options.architecture,
         )
-
         # Number of epochs: text box
         self._frame_epochs = tk.Frame(self._root)
         self._frame_epochs.pack()
@@ -569,6 +575,17 @@ class _AdvancedOptionsGUI(object):
             "Delay",
             default=_int_or_null_inv(self._parent.advanced_options.delay),
             type=_int_or_null,
+        )
+
+        # Sample Rate: text box
+        self._frame_sample_rate = tk.Frame(self._root)
+        self._frame_sample_rate.pack()
+
+        self._sample_rate = _LabeledText(
+            self._frame_sample_rate,
+            "Sample Rate",
+            default=str(self._parent.advanced_options.sample_rate),
+            type=_non_negative_int,
         )
 
         # "Ok": apply and destory
@@ -599,6 +616,10 @@ class _AdvancedOptionsGUI(object):
         # Value None is returned as "null" to disambiguate from non-set.
         if delay is not None:
             self._parent.advanced_options.delay = None if delay == "null" else delay
+        sample_rate = self._sample_rate.get()
+        if sample_rate is not None:
+            self._parent.advanced_options.sample_rate = sample_rate
+
         self._root.destroy()
 
 
