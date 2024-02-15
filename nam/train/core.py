@@ -7,6 +7,7 @@ Functions used by the GUI trainer.
 """
 
 import hashlib
+import json
 import tkinter as tk
 from copy import deepcopy
 from enum import Enum
@@ -18,6 +19,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pytorch_lightning as pl
 import torch
+import os
 from pydantic import BaseModel
 from pytorch_lightning.utilities.warnings import PossibleUserWarning
 from torch.utils.data import DataLoader
@@ -951,8 +953,11 @@ def _get_configs(
                 "pre_emph_weight": 1.0,
                 "pre_emph_coef": 0.85,
             },
-            "optimizer": {"lr": 0.01},
-            "lr_scheduler": {"class": "ExponentialLR", "kwargs": {"gamma": 0.995}},
+            "optimizer": {"lr": lr},
+            "lr_scheduler": {
+                "class": "ExponentialLR",
+                "kwargs": {"gamma": 1.0 - lr_decay},
+            },
         }
     if fit_cab:
         model_config["loss"]["pre_emph_mrstft_weight"] = _CAB_MRSTFT_PRE_EMPH_WEIGHT
@@ -1036,7 +1041,8 @@ def _plot(
     plt.title(f"ESR={esr:.4g}")
     plt.legend()
     if filepath is not None:
-        plt.savefig(filepath + ".png")
+        epesr = f" ESR={esr:.5f}"
+        plt.savefig(filepath + epesr + ".png")
     if not silent:
         plt.show()
 
@@ -1083,15 +1089,15 @@ def train(
     input_path: str,
     output_path: str,
     train_path: str,
-    input_version: Optional[Version] = None,
+    input_version: Optional[Version] = Version(3,0,0),
     epochs=100,
     delay=None,
     model_type: str = "WaveNet",
     architecture: Union[Architecture, str] = Architecture.STANDARD,
     batch_size: int = 16,
     ny: int = 8192,
-    lr=0.004,
-    lr_decay=0.007,
+    lr=0.002,
+    lr_decay=0.0035,
     seed: Optional[int] = 0,
     save_plot: bool = False,
     silent: bool = False,
@@ -1145,6 +1151,11 @@ def train(
         batch_size,
         fit_cab,
     )
+
+    outdir = '/'.join(output_path.split('/')[:-2])
+
+    with open(outdir + os.sep + 'model_cfg.json', 'w') as f:
+        json.dump(model_config, f, indent=4)
 
     print("Starting training. It's time to kick ass and chew bubblegum!")
     # Issue:

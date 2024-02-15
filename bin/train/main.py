@@ -39,8 +39,8 @@ torch.manual_seed(0)
 
 
 def ensure_outdir(outdir: str) -> Path:
-    outdir = Path(outdir, timestamp())
-    outdir.mkdir(parents=True, exist_ok=False)
+    outdir = Path(outdir)
+    outdir.mkdir(parents=True, exist_ok=True)
     return outdir
 
 
@@ -223,6 +223,11 @@ def main_inner(
         plot(model, dataset_validation, show=not no_show)
     # Export!
     model.net.export(outdir)
+
+    model.net.export(
+        outdir,
+        basename=basename,
+    )
 
 
 if __name__ == "__main__":

@@ -51,7 +51,7 @@ except ImportError:
     _HAVE_ACCELERATOR = False
 
 if _HAVE_ACCELERATOR:
-    _DEFAULT_NUM_EPOCHS = 100
+    _DEFAULT_NUM_EPOCHS = 1300
     _DEFAULT_BATCH_SIZE = 16
     _DEFAULT_LR_DECAY = 0.007
 else:
@@ -296,13 +296,13 @@ class _GUI(object):
         make_checkbox(
             _CheckboxKeys.SILENT_TRAINING,
             "Silent run (suggested for batch training)",
-            False,
+            True,
         )
         make_checkbox(_CheckboxKeys.SAVE_PLOT, "Save ESR plot automatically", True)
         make_checkbox(
             _CheckboxKeys.IGNORE_DATA_CHECKS,
             "Ignore data quality checks (DO AT YOUR OWN RISK!)",
-            False,
+            True,
         )
 
         # Grid them:
@@ -341,15 +341,29 @@ class _GUI(object):
         # Advanced-er options
         # If you're poking around looking for these, then maybe it's time to learn to
         # use the command-line scripts ;)
-        lr = 0.004
-        lr_decay = _DEFAULT_LR_DECAY
-        batch_size = _DEFAULT_BATCH_SIZE
+        lr_multiplier = 1
+        model_type = "WaveNet"
+        # model_type = "LSTM"
+        lr = 0.004*lr_multiplier
+        lr_decay = _DEFAULT_LR_DECAY*lr_multiplier
+        batch_size = int(_DEFAULT_BATCH_SIZE*lr_multiplier)
         seed = 0
 
         # Run it
-        for file in file_list:
-            print("Now training {}".format(file))
+        for i,file in enumerate(file_list):
+
+            print("Now training {}/{} - {}:".format(i+1, len(file_list), file))
             basename = re.sub(r"\.wav$", "", file.split("/")[-1])
+            for x, f in enumerate(file_list):
+                n = f.split("/")[-1]
+                if x > i:
+                    print('[] {}'.format(n))
+                else:
+                    print('[x] {}'.format(n))
+            # basename = re.sub(r"\.wav$", "", file.split("/")[-1]) + " - {} - {} - {}".format(model_type, lr_multiplier, architecture.value)
+
+            # basename = file
+            print("To: {}".format(basename))
 
             trained_model = core.train(
                 self._path_button_input.val,
@@ -365,6 +379,7 @@ class _GUI(object):
                 silent=self._checkboxes[_CheckboxKeys.SILENT_TRAINING].variable.get(),
                 save_plot=self._checkboxes[_CheckboxKeys.SAVE_PLOT].variable.get(),
                 modelname=basename,
+                model_type=model_type,
                 ignore_checks=self._checkboxes[
                     _CheckboxKeys.IGNORE_DATA_CHECKS
                 ].variable.get(),
