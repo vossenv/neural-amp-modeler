@@ -938,7 +938,7 @@ class _AdvancedOptionsGUI(object):
 
         self._latency = _LabeledText(
             self._frame_latency,
-            "Reamp latency",
+            "Reamp latency [spls]",
             default=_type_or_null_inv(self._parent.advanced_options.latency),
             type=_int_or_null,
         )
